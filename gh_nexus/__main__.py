@@ -229,6 +229,110 @@ async def cmd_automation(args) -> int:
     return 0
 
 
+async def cmd_run(args) -> int:
+    console.print("[bold green]Starting Continuous Auto-Run Mode...[/bold green]")
+    
+    engine = NexusEngine()
+    await engine.initialize()
+    
+    console.print("[green]Engine initialized![/green]")
+    console.print(f"Registered {len(engine.registry.list_all_workers())} workers")
+    
+    interval = args.interval
+    console.print(f"\n[cyan]Running in continuous mode (check every {interval}s)[/cyan]")
+    console.print("[dim]Workflow:[/dim]")
+    console.print("  1. Fetch issues from GitHub Project")
+    console.print("  2. Overseer analyzes status")
+    console.print("  3. Interpreter decomposes tasks")
+    console.print("  4. Dispatcher assigns to workers")
+    console.print("  5. Workers execute tasks")
+    console.print("  6. Repeat\n")
+    
+    processed_issues = set()
+    
+    try:
+        while True:
+            try:
+                console.print("\n[cyan]=== Checking for new tasks ===[/cyan]")
+                
+                project_items = await engine.github.list_items()
+                
+                new_tasks = []
+                for item in project_items:
+                    content = item.get("content", {})
+                    if content:
+                        issue_num = content.get("number")
+                        if issue_num and issue_num not in processed_issues:
+                            status = item.get("status", "")
+                            if status in ["Todo", "Backlog"]:
+                                new_tasks.append({
+                                    "number": issue_num,
+                                    "title": content.get("title", ""),
+                                    "body": content.get("body", ""),
+                                })
+                                processed_issues.add(issue_num)
+                
+                if new_tasks:
+                    console.print(f"[green]Found {len(new_tasks)} new tasks[/green]")
+                    
+                    for task_info in new_tasks:
+                        console.print(f"\n[yellow]Processing: {task_info['title']}[/yellow]")
+                        
+                        context = {
+                            "tasks": [],
+                            "workers": engine.registry.list_all_workers(),
+                        }
+                        
+                        from gh_nexus.models import Task, TaskStatus
+                        task = Task(
+                            title=task_info["title"],
+                            description=task_info["body"],
+                            status=TaskStatus.TODO,
+                            github_issue_id=task_info["number"],
+                        )
+                        context["tasks"].append(task)
+                        
+                        interpreter_result = await engine.interpreter.execute(context)
+                        console.print(f"  Decomposed into {interpreter_result['task_count']} subtasks")
+                        
+                        dispatcher_result = await engine.dispatcher.execute(context)
+                        console.print(f"  Assigned to {len(dispatcher_result['assignments'])} workers")
+                        
+                        for assignment in dispatcher_result["assignments"]:
+                            worker_id = assignment["worker_id"]
+                            task_id = assignment["task_id"]
+                            
+                            worker = engine.registry.get_worker(worker_id)
+                            if worker:
+                                console.print(f"  → {worker.name} executing...")
+                                
+                                from gh_nexus.roles import WorkerRole
+                                worker_role = WorkerRole(worker)
+                                result = await worker_role.execute({
+                                    "task": context["tasks"][0],
+                                })
+                                
+                                console.print(f"    Status: {result.get('status')}")
+                else:
+                    console.print("[dim]No new tasks found[/dim]")
+                
+                status_result = await engine.monitor_progress()
+                console.print(f"\n[dim]Progress: {status_result['progress']:.0f}% | "
+                            f"Tasks: {status_result['metrics']['completed_tasks']}/"
+                            f"{status_result['metrics']['total_tasks']}[/dim]")
+                
+            except Exception as e:
+                console.print(f"[red]Error in loop: {e}[/red]")
+            
+            await asyncio.sleep(interval)
+            
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Stopping...[/yellow]")
+        await engine.shutdown()
+    
+    return 0
+
+
 async def cmd_status(args) -> int:
     engine = NexusEngine()
     await engine.initialize()
@@ -322,6 +426,9 @@ def main() -> int:
     auto_parser.add_argument("--port", type=int, default=8080, help="Webhook port")
     auto_parser.add_argument("--secret", type=str, help="Webhook secret")
     
+    run_parser = subparsers.add_parser("run", help="Continuous auto-run mode - monitor and execute tasks")
+    run_parser.add_argument("--interval", type=int, default=30, help="Check interval in seconds")
+    
     subparsers.add_parser("status", help="Show system status")
     
     assign_parser = subparsers.add_parser("assign", help="Assign and run a task")
@@ -344,6 +451,7 @@ def main() -> int:
         "plan": cmd_plan,
         "sync": cmd_sync,
         "automation": cmd_automation,
+        "run": cmd_run,
         "status": cmd_status,
         "assign": cmd_assign,
         "test": cmd_test,
