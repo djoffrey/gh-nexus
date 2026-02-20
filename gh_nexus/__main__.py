@@ -1,14 +1,16 @@
 import asyncio
 import logging
 import sys
+from typing import Optional
 
 import rich.console
 import rich.prompt
 
+from gh_nexus.automation import AutomationEngine, start_webhook_server
 from gh_nexus.config import settings
 from gh_nexus.core.engine import NexusEngine
 
-console = console = rich.console.Console()
+console = rich.console.Console()
 
 
 async def cmd_init(args) -> int:
@@ -25,6 +27,7 @@ async def cmd_init(args) -> int:
     console.print(f"  GitHub Owner: {settings.github_owner}")
     console.print(f"  Project Number: {settings.github_project_number}")
     console.print(f"  Log Level: {settings.log_level}")
+    console.print(f"  Webhook Port: {args.port}")
     
     return 0
 
@@ -38,12 +41,52 @@ async def cmd_start(args) -> int:
     console.print("[green]Engine initialized successfully![/green]")
     console.print(f"Registered {len(engine.registry.list_all_workers())} workers")
     
+    if args.webhook:
+        secret = args.secret or ""
+        start_webhook_server(engine, args.port, secret)
+        console.print(f"[green]Webhook server started on port {args.port}[/green]")
+        console.print(f"[cyan]  POST /webhook - GitHub webhook endpoint[/cyan]")
+    
     if args.requirements:
         console.print("\n[cyan]Processing requirements...[/cyan]")
         result = await engine.process_requirements(args.requirements)
         console.print(f"[green]Created {result['tasks']['task_count']} tasks[/green]")
     
     console.print("\n[bold]Gh Nexus is running. Press Ctrl+C to exit.[/bold]\n")
+    
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Shutting down...[/yellow]")
+        await engine.shutdown()
+    
+    return 0
+
+
+async def cmd_automation(args) -> int:
+    console.print("[bold green]Starting Automation Engine with Webhook...[/bold green]")
+    
+    engine = AutomationEngine()
+    await engine.initialize()
+    
+    console.print("[green]Automation Engine initialized![/green]")
+    console.print(f"Registered {len(engine.registry.list_all_workers())} workers")
+    
+    secret = args.secret or ""
+    start_webhook_server(engine, args.port, secret)
+    
+    console.print(f"\n[green]Webhook server listening on port {args.port}[/green]")
+    console.print("[cyan]  POST /webhook - GitHub webhook endpoint[/cyan]")
+    console.print("\n[bold yellow]Configure your GitHub webhook:[/bold yellow]")
+    console.print(f"  URL: https://your-domain.com:{args.port}/webhook")
+    console.print(f"  Events: issues, issue_comment, pull_request")
+    
+    console.print("\n[bold]Automation is active. Press Ctrl+C to exit.[/bold]\n")
+    console.print("[dim]Triggers:[/dim]")
+    console.print("  - New issue created → Agent starts working")
+    console.print("  - Issue labeled 'agent' → Agent processes issue")
+    console.print("  - Comment '/agent' → Agent processes issue")
     
     try:
         while True:
@@ -129,9 +172,17 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command")
     
     init_parser = subparsers.add_parser("init", help="Initialize the project")
+    init_parser.add_argument("--port", type=int, default=8080, help="Webhook port")
     
     start_parser = subparsers.add_parser("start", help="Start the nexus engine")
     start_parser.add_argument("-r", "--requirements", help="Initial requirements text")
+    start_parser.add_argument("--webhook", action="store_true", help="Enable webhook server")
+    start_parser.add_argument("--port", type=int, default=8080, help="Webhook port")
+    start_parser.add_argument("--secret", type=str, help="Webhook secret")
+    
+    auto_parser = subparsers.add_parser("automation", help="Start automation engine with webhook")
+    auto_parser.add_argument("--port", type=int, default=8080, help="Webhook port")
+    auto_parser.add_argument("--secret", type=str, help="Webhook secret")
     
     subparsers.add_parser("status", help="Show system status")
     
@@ -151,6 +202,7 @@ def main() -> int:
     commands = {
         "init": cmd_init,
         "start": cmd_start,
+        "automation": cmd_automation,
         "status": cmd_status,
         "assign": cmd_assign,
         "test": cmd_test,
