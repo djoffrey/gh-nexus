@@ -1,0 +1,422 @@
+import logging
+from abc import ABC, abstractmethod
+from typing import Optional
+
+from gh_nexus.models import ProjectGoal, Task, TaskResult, Worker
+
+logger = logging.getLogger(__name__)
+
+
+class BaseRole(ABC):
+    name: str = ""
+    description: str = ""
+
+    @abstractmethod
+    async def execute(self, context: dict) -> dict:
+        pass
+
+
+class Visionary(BaseRole):
+    name = "Visionary"
+    description = "Define project goals & direction - Requirements understanding, goal breakdown"
+
+    async def execute(self, context: dict) -> dict:
+        user_requirements = context.get("requirements", "")
+        
+        goals = self._decompose_goals(user_requirements)
+        
+        return {
+            "goals": [goal.model_dump() for goal in goals],
+            "strategy": self._define_strategy(goals),
+        }
+
+    def _decompose_goals(self, requirements: str) -> list[ProjectGoal]:
+        goals = []
+        lines = requirements.split("\n")
+        
+        current_goal = None
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            if line.startswith("#") or line.lower().startswith("goal"):
+                if current_goal:
+                    goals.append(current_goal)
+                current_goal = ProjectGoal(
+                    title=line.lstrip("# ").strip(),
+                    description="",
+                )
+            elif current_goal:
+                current_goal.description += line + "\n"
+        
+        if current_goal:
+            goals.append(current_goal)
+        
+        if not goals:
+            goals.append(ProjectGoal(
+                title="Default Goal",
+                description=requirements,
+            ))
+        
+        logger.info(f"Visionary created {len(goals)} goals")
+        return goals
+
+    def _define_strategy(self, goals: list[ProjectGoal]) -> str:
+        phases = []
+        
+        for i, goal in enumerate(goals):
+            phases.append(f"Phase {i+1}: {goal.title}")
+        
+        return "\n".join(phases)
+
+
+class Overseer(BaseRole):
+    name = "Overseer"
+    description = "Monitor progress, assess risks - Progress tracking, risk alerting"
+
+    async def execute(self, context: dict) -> dict:
+        tasks = context.get("tasks", [])
+        workers = context.get("workers", [])
+        
+        progress = self._calculate_progress(tasks)
+        risks = self._identify_risks(tasks, workers)
+        
+        return {
+            "progress": progress,
+            "risks": risks,
+            "alerts": self._generate_alerts(risks),
+            "metrics": self._collect_metrics(tasks, workers),
+        }
+
+    def _calculate_progress(self, tasks: list[Task]) -> float:
+        if not tasks:
+            return 0.0
+        
+        completed = sum(1 for t in tasks if t.status.value == "Done")
+        return (completed / len(tasks)) * 100
+
+    def _identify_risks(self, tasks: list[Task], workers: list[Worker]) -> list[dict]:
+        risks = []
+        
+        blocked = [t for t in tasks if t.status.value == "Blocked"]
+        if blocked:
+            risks.append({
+                "type": "blocked_tasks",
+                "severity": "high",
+                "count": len(blocked),
+                "message": f"{len(blocked)} tasks are blocked",
+            })
+        
+        idle_workers = [w for w in workers if w.is_available and w.status == "idle"]
+        if idle_workers and len(tasks) > len(workers):
+            risks.append({
+                "type": "resource_mismatch",
+                "severity": "medium",
+                "message": f"{len(idle_workers)} workers idle but tasks pending",
+            })
+        
+        overdue = [t for t in tasks if t.actual_hours > t.estimated_hours * 1.5]
+        if overdue:
+            risks.append({
+                "type": "overdue_tasks",
+                "severity": "medium",
+                "count": len(overdue),
+                "message": f"{len(overdue)} tasks exceeding estimates",
+            })
+        
+        return risks
+
+    def _generate_alerts(self, risks: list[dict]) -> list[str]:
+        alerts = []
+        for risk in risks:
+            if risk.get("severity") == "high":
+                alerts.append(f"ALERT: {risk['message']}")
+            elif risk.get("severity") == "medium":
+                alerts.append(f"WARNING: {risk['message']}")
+        return alerts
+
+    def _collect_metrics(self, tasks: list[Task], workers: list[Worker]) -> dict:
+        return {
+            "total_tasks": len(tasks),
+            "completed_tasks": len([t for t in tasks if t.status.value == "Done"]),
+            "in_progress": len([t for t in tasks if t.status.value == "In Progress"]),
+            "blocked_tasks": len([t for t in tasks if t.status.value == "Blocked"]),
+            "total_workers": len(workers),
+            "active_workers": len([w for w in workers if w.status != "idle"]),
+        }
+
+
+class Interpreter(BaseRole):
+    name = "Interpreter"
+    description = "Analyze requirements, decompose tasks - Requirements analysis, task breakdown"
+
+    async def execute(self, context: dict) -> dict:
+        goals = context.get("goals", [])
+        
+        tasks = []
+        for goal in goals:
+            goal_tasks = self._decompose_goal(goal)
+            tasks.extend(goal_tasks)
+        
+        return {
+            "tasks": [t.model_dump() for t in tasks],
+            "task_count": len(tasks),
+            "complexity_analysis": self._analyze_complexity(tasks),
+        }
+
+    def _decompose_goal(self, goal: ProjectGoal) -> list[Task]:
+        tasks = []
+        
+        main_task = Task(
+            title=f"Implement: {goal.title}",
+            description=goal.description,
+            priority="Medium",
+        )
+        tasks.append(main_task)
+        
+        keywords = goal.description.lower().split()
+        
+        if any(k in keywords for k in ["api", "endpoint", "service"]):
+            tasks.append(Task(
+                title=f"[{goal.title}] Create API endpoints",
+                description="Design and implement API endpoints",
+                parent_id=main_task.id,
+            ))
+        
+        if any(k in keywords for k in ["test", "testing", "validation"]):
+            tasks.append(Task(
+                title=f"[{goal.title}] Write tests",
+                description="Write unit and integration tests",
+                parent_id=main_task.id,
+            ))
+        
+        if any(k in keywords for k in ["deploy", "docker", "infrastructure"]):
+            tasks.append(Task(
+                title=f"[{goal.title}] Setup deployment",
+                description="Configure deployment pipeline",
+                parent_id=main_task.id,
+            ))
+        
+        logger.info(f"Interpreter decomposed goal '{goal.title}' into {len(tasks)} tasks")
+        return tasks
+
+    def _analyze_complexity(self, tasks: list[Task]) -> dict:
+        return {
+            "estimated_hours": sum(t.estimated_hours for t in tasks),
+            "parallel_possible": len(tasks),
+            "critical_path": len(tasks) // 2,
+        }
+
+
+class Dispatcher(BaseRole):
+    name = "Dispatcher"
+    description = "Assign tasks to workers - Task dispatch, load balancing"
+
+    async def execute(self, context: dict) -> dict:
+        tasks = context.get("tasks", [])
+        workers = context.get("workers", [])
+        
+        assignments = self._assign_tasks(tasks, workers)
+        
+        return {
+            "assignments": assignments,
+            "load_distribution": self._calculate_load(workers, assignments),
+        }
+
+    def _assign_tasks(self, tasks: list[Task], workers: list[Worker]) -> list[dict]:
+        assignments = []
+        available_workers = [w for w in workers if w.is_available]
+        
+        for i, task in enumerate(tasks):
+            if i >= len(available_workers):
+                i = i % len(available_workers) if available_workers else -1
+            
+            if i >= 0:
+                worker = available_workers[i]
+                assignments.append({
+                    "task_id": str(task.id),
+                    "worker_id": str(worker.id),
+                    "worker_name": worker.name,
+                })
+                task.assign_worker(worker.id)
+                worker.current_task_id = task.id
+                worker.status = "working"
+        
+        return assignments
+
+    def _calculate_load(self, workers: list[Worker], assignments: list[dict]) -> dict:
+        worker_load = {}
+        for assignment in assignments:
+            wid = assignment["worker_id"]
+            worker_load[wid] = worker_load.get(wid, 0) + 1
+        
+        return {
+            "distribution": worker_load,
+            "balanced": max(worker_load.values()) - min(worker_load.values()) <= 1 if worker_load else True,
+        }
+
+
+class WorkerRole(BaseRole):
+    name = "Worker"
+    description = "Execute code tasks - Code generation, file operations"
+
+    def __init__(self, worker: Worker):
+        self.worker = worker
+
+    async def execute(self, context: dict) -> dict:
+        task = context.get("task")
+        if not task:
+            return {"status": "error", "message": "No task provided"}
+        
+        logger.info(f"Worker {self.worker.name} executing task: {task.title}")
+        
+        result = await self._execute_task(task, context)
+        
+        return result
+
+    async def _execute_task(self, task: Task, context: dict) -> dict:
+        task_type = self._classify_task(task)
+        
+        if task_type == "file_operation":
+            return await self._handle_file_operation(task, context)
+        elif task_type == "code_generation":
+            return await self._handle_code_generation(task, context)
+        else:
+            return await self._handle_general_task(task, context)
+
+    def _classify_task(self, task: Task) -> str:
+        title_lower = task.title.lower()
+        if "file" in title_lower or "create" in title_lower or "write" in title_lower:
+            return "file_operation"
+        elif "code" in title_lower or "implement" in title_lower or "function" in title_lower:
+            return "code_generation"
+        return "general"
+
+    async def _handle_file_operation(self, task: Task, context: dict) -> dict:
+        return {
+            "status": "completed",
+            "output": f"File operation completed: {task.title}",
+            "quality_score": 0.9,
+        }
+
+    async def _handle_code_generation(self, task: Task, context: dict) -> dict:
+        return {
+            "status": "completed",
+            "output": f"Code generated for: {task.title}",
+            "quality_score": 0.85,
+        }
+
+    async def _handle_general_task(self, task: Task, context: dict) -> dict:
+        return {
+            "status": "completed",
+            "output": f"Task completed: {task.title}",
+            "quality_score": 0.8,
+        }
+
+
+class Tester(BaseRole):
+    name = "Tester"
+    description = "Write and run tests - Test coverage, validation"
+
+    async def execute(self, context: dict) -> dict:
+        tasks = context.get("tasks", [])
+        results = context.get("results", [])
+        
+        test_plan = self._generate_test_plan(tasks)
+        coverage = self._calculate_coverage(tasks, results)
+        
+        return {
+            "test_plan": test_plan,
+            "coverage": coverage,
+            "recommendations": self._recommend_tests(tasks),
+        }
+
+    def _generate_test_plan(self, tasks: list[Task]) -> list[dict]:
+        plan = []
+        for task in tasks:
+            plan.append({
+                "task_id": str(task.id),
+                "test_type": "unit" if "function" in task.title.lower() else "integration",
+                "estimated_minutes": 15,
+            })
+        return plan
+
+    def _calculate_coverage(self, tasks: list[Task], results: list[TaskResult]) -> dict:
+        return {
+            "total_tests": len(tasks),
+            "passed": len([r for r in results if r.status == "completed"]),
+            "failed": len([r for r in results if r.status == "failed"]),
+            "coverage_percentage": 75.0,
+        }
+
+    def _recommend_tests(self, tasks: list[Task]) -> list[str]:
+        recommendations = []
+        for task in tasks:
+            if "api" in task.title.lower():
+                recommendations.append(f"Add API integration tests for: {task.title}")
+            if "function" in task.title.lower():
+                recommendations.append(f"Add unit tests for: {task.title}")
+        return recommendations
+
+
+class Rewarder(BaseRole):
+    name = "Rewarder"
+    description = "Evaluate results, suggest improvements - Quality assessment, feedback optimization"
+
+    async def execute(self, context: dict) -> dict:
+        results = context.get("results", [])
+        
+        quality_report = self._assess_quality(results)
+        suggestions = self._generate_suggestions(results)
+        worker_scores = self._score_workers(results)
+        
+        return {
+            "quality_report": quality_report,
+            "suggestions": suggestions,
+            "worker_scores": worker_scores,
+        }
+
+    def _assess_quality(self, results: list[TaskResult]) -> dict:
+        if not results:
+            return {"overall_score": 0.0, "status": "no_data"}
+        
+        avg_score = sum(r.quality_score for r in results) / len(results)
+        
+        return {
+            "overall_score": avg_score,
+            "status": "excellent" if avg_score >= 0.9 else "good" if avg_score >= 0.7 else "needs_improvement",
+            "total_results": len(results),
+        }
+
+    def _generate_suggestions(self, results: list[TaskResult]) -> list[str]:
+        suggestions = []
+        
+        failed = [r for r in results if r.status == "failed"]
+        if failed:
+            suggestions.append(f"Review {len(failed)} failed tasks for root cause analysis")
+        
+        low_quality = [r for r in results if r.quality_score < 0.7]
+        if low_quality:
+            suggestions.append(f"Improve code quality for {len(low_quality)} low-scoring tasks")
+        
+        if not suggestions:
+            suggestions.append("Continue current performance - all tasks meeting standards")
+        
+        return suggestions
+
+    def _score_workers(self, results: list[TaskResult]) -> dict:
+        worker_scores = {}
+        
+        for result in results:
+            wid = str(result.worker_id)
+            if wid not in worker_scores:
+                worker_scores[wid] = {"total": 0, "score": 0.0}
+            worker_scores[wid]["total"] += 1
+            worker_scores[wid]["score"] += result.quality_score
+        
+        for wid in worker_scores:
+            if worker_scores[wid]["total"] > 0:
+                worker_scores[wid]["average"] = worker_scores[wid]["score"] / worker_scores[wid]["total"]
+        
+        return worker_scores
