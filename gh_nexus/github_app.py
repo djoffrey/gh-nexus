@@ -3,8 +3,8 @@ import time
 from pathlib import Path
 from typing import Optional
 
+import httpx
 import jwt
-import requests
 
 from gh_nexus.config import settings
 
@@ -27,7 +27,7 @@ class GitHubAppAuth:
         
         now = int(time.time())
         payload = {
-            "iss": self.app_id,
+            "iss": str(self.app_id),
             "iat": now,
             "exp": now + 600,
         }
@@ -47,7 +47,7 @@ class GitHubAppAuth:
             "Accept": "application/vnd.github+json",
         }
         
-        response = requests.post(url, headers=headers)
+        response = httpx.post(url, headers=headers)
         response.raise_for_status()
         
         data = response.json()
