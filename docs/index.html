@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gh Nexus - AI Agent Project Orchestration</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #0a0a0a;
+            min-height: 100vh;
+        }
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 80px 20px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+        .hero h1 {
+            font-size: 3.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+        .hero p {
+            font-size: 1.3rem;
+            color: #888;
+            max-width: 600px;
+            margin: 0 auto 30px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 20px;
+            color: #00d4ff;
+            font-size: 0.9rem;
+            margin: 5px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+        .feature {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 25px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .feature:hover {
+            transform: translateY(-3px);
+            border-color: #333;
+        }
+        .feature h3 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        .feature p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+        .roles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+        .role {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .role-name {
+            color: #7c3aed;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .role-desc {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .code-block {
+            background: #0d0d0d;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        .code-block code {
+            color: #00d4ff;
+            font-family: 'Fira Code', monospace;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #00d4ff;
+        }
+        .workflow {
+            background: #111;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        .workflow-step {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #222;
+        }
+        .workflow-step:last-child {
+            border-bottom: none;
+        }
+        .step-num {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: #444;
+            border-top: 1px solid #222;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Gh Nexus</h1>
+        <p>AI Agent Project Orchestration System - Autonomous development powered by GitHub Issues</p>
+        <div>
+            <span class="badge">🤖 AI Agents</span>
+            <span class="badge">🔗 GitHub Integration</span>
+            <span class="badge">⚡ Automation</span>
+            <span class="badge">🐳 Docker</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Features</h2>
+        <div class="features">
+            <div class="feature">
+                <h3>🎯 GitHub-Centric</h3>
+                <p>Everything revolves around GitHub Issues - create an issue and watch agents automatically implement it.</p>
+            </div>
+            <div class="feature">
+                <h3>🤖 Multi-Agent</h3>
+                <p>Supports OpenCode, Claude Code, Cursor and more. Workers execute tasks in parallel.</p>
+            </div>
+            <div class="feature">
+                <h3>🔄 Auto-Run Mode</h3>
+                <p>Continuous monitoring loop - detects new issues, processes tasks, creates PRs automatically.</p>
+            </div>
+            <div class="feature">
+                <h3>🐳 Docker Ready</h3>
+                <p>Containerized development environment for consistent, reproducible execution.</p>
+            </div>
+        </div>
+
+        <h2>7 Agent Roles</h2>
+        <div class="roles">
+            <div class="role">
+                <div class="role-name">Visionary</div>
+                <div class="role-desc">Define goals</div>
+            </div>
+            <div class="role">
+                <div class="role-name">Overseer</div>
+                <div class="role-desc">Monitor progress</div>
+            </div>
+            <div class="role">
+                <div class="role-name">Interpreter</div>
+                <div class="role-desc">Analyze tasks</div>
+            </div>
+            <div class="role">
+                <div class="role-name">Dispatcher</div>
+                <div class="role-desc">Assign work</div>
+            </div>
+            <div class="role">
+                <div class="role-name">Worker</div>
+                <div class="role-desc">Execute code</div>
+            </div>
+            <div class="role">
+                <div class="role-name">Tester</div>
+                <div class="role-desc">Validate results</div>
+            </div>
+            <div class="role">
+                <div class="role-name">Rewarder</div>
+                <div class="role-desc">Evaluate quality</div>
+            </div>
+        </div>
+
+        <h2>How It Works</h2>
+        <div class="workflow">
+            <div class="workflow-step">
+                <div class="step-num">1</div>
+                <div>Create a GitHub Issue</div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">2</div>
+                <div>Gh Nexus detects new issue via polling or webhook</div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">3</div>
+                <div>Interpreter decomposes into subtasks</div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">4</div>
+                <div>Dispatcher assigns to available worker agents</div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">5</div>
+                <div>Workers execute code changes</div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">6</div>
+                <div>Auto-create Git branch + PR</div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">7</div>
+                <div>Issue gets updated with completion status</div>
+            </div>
+        </div>
+
+        <h2>Quick Start</h2>
+        <div class="code-block">
+            <code># Clone the repo<br>
+git clone https://github.com/djoffrey/gh-nexus<br>
+cd gh-nexus<br><br>
+# Configure environment<br>
+cp .env.example .env<br>
+# Edit .env with your GitHub token<br><br>
+# Run automation<br>
+uv run python -m gh_nexus run --interval 30</code>
+        </div>
+
+        <h2>Commands</h2>
+        <div class="code-block">
+            <code>uv run python -m gh_nexus init          # Initialize workers<br>
+uv run python -m gh_nexus run            # Continuous auto-run<br>
+uv run python -m gh_nexus automation     # Webhook server<br>
+uv run python -m gh_nexus plan           # Show project status<br>
+uv run python -m gh_nexus roadmap         # Build roadmap</code>
+        </div>
+
+        <div style="text-align: center; margin: 40px 0;">
+            <a href="https://github.com/djoffrey/gh-nexus" class="btn">View on GitHub</a>
+            <a href="https://github.com/djoffrey/gh-nexus/issues" class="btn btn-outline">Open Issues</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>🚀 Powered by Gh Nexus - Autonomous AI Development System</p>
+        <p style="margin-top: 10px; font-size: 0.9rem;">
+            <a href="https://github.com/djoffrey/gh-nexus" style="color: #00d4ff;">GitHub</a> ·
+            <a href="https://github.com/djoffrey/gh-nexus/issues" style="color: #00d4ff;">Issues</a> ·
+            <a href="https://github.com/djoffrey/gh-nexus/pulls" style="color: #00d4ff;">PRs</a>
+        </p>
+    </footer>
+</body>
+</html>
