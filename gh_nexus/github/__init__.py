@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import subprocess
 from typing import Optional
 
@@ -15,7 +16,7 @@ class GitHubProject:
 
     async def run_gh(self, args: list[str]) -> subprocess.CompletedProcess:
         cmd = ["gh"] + args
-        env = {**subprocess.os.environ, "GH_TOKEN": self.token}
+        env = {**os.environ, "GH_TOKEN": self.token}
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
@@ -25,7 +26,7 @@ class GitHubProject:
         stdout, stderr = await proc.communicate()
         result = subprocess.CompletedProcess(
             args=cmd,
-            returncode=proc.returncode,
+            returncode=proc.returncode or 0,
             stdout=stdout.decode() if stdout else "",
             stderr=stderr.decode() if stderr else "",
         )
@@ -58,7 +59,7 @@ class GitHubProject:
         return None
 
     async def create_issue(self, title: str, body: str = "", labels: list[str] = None) -> Optional[dict]:
-        args = ["issue", "create", "--title", title, "--body", body]
+        args = ["issue", "create", "--title", title, "--body", body, "--repo", f"{self.owner}/gh-nexus"]
         if labels:
             for label in labels:
                 args.extend(["--label", label])

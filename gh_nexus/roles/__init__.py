@@ -32,6 +32,9 @@ class Visionary(BaseRole):
     async def execute(self, context: dict) -> dict:
         user_requirements = context.get("requirements", "")
         
+        if not user_requirements:
+            user_requirements = self._get_default_vision()
+        
         goals = self._decompose_goals(user_requirements)
         
         if self.github and context.get("auto_create_issues", False):
@@ -41,6 +44,35 @@ class Visionary(BaseRole):
             "goals": [goal.model_dump() for goal in goals],
             "strategy": self._define_strategy(goals),
         }
+
+    def _get_default_vision(self) -> str:
+        return """
+# Gh Nexus - AI Agent Project Orchestration System
+
+## Vision
+Build an autonomous AI agent development platform centered around GitHub Projects, where creating issues automatically triggers AI agents to implement solutions.
+
+## Core Features
+1. GitHub Integration - Use gh CLI for all project operations
+2. Agent Workers - Register and manage coding agents (opencode, claude-code, cursor)
+3. Docker Development - Containerized development environment
+4. Automation Pipeline - Issue → Agent → PR workflow
+5. Multi-Agent Collaboration - Visionary, Overseer, Interpreter, Dispatcher, Worker, Tester, Rewarder
+
+## Technical Goals
+- Webhook server for real-time GitHub events
+- Git worktree management for isolated agent workspaces
+- Auto PR creation after agent completes
+- CI/CD integration with GitHub Actions
+- User authentication system
+- RESTful API for external integrations
+
+## Future Enhancements
+- Multi-repo support
+- Agent learning from feedback
+- Advanced scheduling and prioritization
+- Analytics and reporting dashboard
+"""
 
     async def _create_github_issues(self, goals: list[ProjectGoal]) -> None:
         if not self.github:
@@ -75,28 +107,51 @@ class Visionary(BaseRole):
         lines = requirements.split("\n")
         
         current_goal = None
+        current_section = "General"
+        
         for line in lines:
             line = line.strip()
             if not line:
                 continue
             
-            if line.startswith("#") or line.lower().startswith("goal"):
-                if current_goal:
-                    goals.append(current_goal)
+            if line.startswith("# "):
+                current_section = line.lstrip("# ").strip()
+            elif line.startswith("## "):
+                section_name = line.lstrip("## ").strip()
                 current_goal = ProjectGoal(
-                    title=line.lstrip("# ").strip(),
+                    title=section_name,
                     description="",
+                    status="active",
                 )
+            elif line.startswith(("- ", "* ")) and any(keyword in line.lower() for keyword in ["feature", "goal", "enhancement", "integration", "support", "system"]):
+                item = line.lstrip("-* ").strip()
+                if current_goal:
+                    current_goal.description += f"- {item}\n"
+                else:
+                    goals.append(ProjectGoal(
+                        title=item,
+                        description=f"Part of: {current_section}",
+                        status="active",
+                    ))
+            elif line[0:1].isdigit() and ". " in line:
+                item = line.split(". ", 1)[1] if ". " in line else line
+                goals.append(ProjectGoal(
+                    title=item,
+                    description=f"Part of: {current_section}",
+                    status="active",
+                ))
             elif current_goal:
-                current_goal.description += line + "\n"
+                if len(line) > 2:
+                    current_goal.description += line + "\n"
         
-        if current_goal:
+        if current_goal and current_goal.title:
             goals.append(current_goal)
         
         if not goals:
             goals.append(ProjectGoal(
-                title="Default Goal",
-                description=requirements,
+                title="Project Implementation",
+                description=requirements[:500],
+                status="active",
             ))
         
         logger.info(f"Visionary created {len(goals)} goals")

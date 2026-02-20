@@ -76,15 +76,35 @@ async def cmd_roadmap(args) -> int:
 ## Vision
 Build an autonomous AI agent development platform centered around GitHub Projects, where creating issues automatically triggers AI agents to implement solutions.
 
-## Goals
+## Core Features
 1. GitHub Integration - Use gh CLI for all project operations
 2. Agent Workers - Register and manage coding agents (opencode, claude-code, cursor)
 3. Docker Development - Containerized development environment
 4. Automation Pipeline - Issue → Agent → PR workflow
 5. Multi-Agent Collaboration - Visionary, Overseer, Interpreter, Dispatcher, Worker, Tester, Rewarder
+
+## Technical Goals
+- Webhook server for real-time GitHub events
+- Git worktree management for isolated agent workspaces
+- Auto PR creation after agent completes
+- CI/CD integration with GitHub Actions
+- User authentication system
+- RESTful API for external integrations
+
+## Future Enhancements
+- Multi-repo support
+- Agent learning from feedback
+- Advanced scheduling and prioritization
+- Analytics and reporting dashboard
 """
     
-    result = await engine.visionary.execute({"requirements": vision})
+    context = {"requirements": vision}
+    
+    if args.create_issues:
+        context["auto_create_issues"] = True
+        console.print("[yellow]Will create issues in GitHub...[/yellow]")
+    
+    result = await engine.visionary.execute(context)
     
     console.print("\n[bold green]Roadmap created:[/bold green]")
     console.print(result["strategy"])
@@ -499,6 +519,7 @@ def main() -> int:
     
     roadmap_parser = subparsers.add_parser("roadmap", help="Build roadmap with Visionary")
     roadmap_parser.add_argument("-d", "--direction", help="Project direction/vision")
+    roadmap_parser.add_argument("--create-issues", action="store_true", help="Auto-create GitHub issues for each goal")
     
     plan_parser = subparsers.add_parser("plan", help="Sync tasks from GitHub Project with Overseer")
     

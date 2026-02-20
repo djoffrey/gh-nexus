@@ -29,7 +29,7 @@ class NexusEngine:
         self.registry = AgentRegistry()
         self.executor = AgentExecutor(self.registry)
         
-        self.visionary = Visionary()
+        self.visionary = Visionary(github=self.github)
         self.overseer = Overseer()
         self.interpreter = Interpreter()
         self.dispatcher = Dispatcher()
