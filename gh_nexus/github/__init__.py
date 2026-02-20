@@ -32,62 +32,18 @@ class GitHubProject:
         return result
 
     async def list_items(self) -> list[dict]:
-        query = """
-        query($owner: String!, $number: Int!) {
-          projectV2(owner: $owner, number: $number) {
-            items(first: 50) {
-              nodes {
-                id
-                fieldValues(first: 8) {
-                  nodes {
-                    ... on ProjectV2ItemFieldTextValue {
-                      text
-                      field { name }
-                    }
-                    ... on ProjectV2ItemFieldSingleSelectValue {
-                      name
-                      field { name }
-                    }
-                    ... on ProjectV2ItemFieldNumberValue {
-                      number
-                      field { name }
-                    }
-                  }
-                }
-                content {
-                  ... on Issue {
-                    id
-                    title
-                    body
-                    number
-                    state
-                    labels(first: 10) { nodes { name } }
-                  }
-                  ... on PullRequest {
-                    id
-                    title
-                    body
-                    number
-                    state
-                  }
-                }
-              }
-            }
-          }
-        }
-        """
         result = await self.run_gh([
-            "api", "graphql",
-            "-f", f"owner={self.owner}",
-            "-f", f"number={self.project_number}",
-            "-f", f"query={query}",
+            "project", "item-list", str(self.project_number),
+            "--owner", self.owner,
+            "--format", "json",
         ])
+        
         if result.returncode != 0:
             return []
         
         try:
             data = json.loads(result.stdout)
-            return data.get("data", {}).get("projectV2", {}).get("items", {}).get("nodes", [])
+            return data.get("items", [])
         except json.JSONDecodeError:
             return []
 
