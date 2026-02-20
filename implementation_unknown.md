@@ -2,8 +2,8 @@
 
 ## Task
 
-Task: Setup CI/CD pipeline
-Description: Configure GitHub Actions for automated testing and deployment
+Task: Add auto PR creation after agent completes
+Description: Automatically create pull request when agent finishes task
 
 Please complete this task. Execute any necessary changes directly.
 
