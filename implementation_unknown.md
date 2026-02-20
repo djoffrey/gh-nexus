@@ -2,8 +2,8 @@
 
 ## Task
 
-Task: Setup Docker deployment
-Description: Create Docker container for production deployment
+Task: Setup CI/CD pipeline
+Description: Configure GitHub Actions for automated testing and deployment
 
 Please complete this task. Execute any necessary changes directly.
 

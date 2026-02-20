@@ -282,6 +282,8 @@ async def cmd_run(args) -> int:
                         branch_name = f"feature/issue-{issue_num}"
                         console.print(f"  Creating branch: {branch_name}")
                         
+                        await engine.github.run_gh(["git", "checkout", "main"])
+                        
                         check_result = await engine.github.run_gh([
                             "git", "branch", "-a"
                         ])
