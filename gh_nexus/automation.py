@@ -29,7 +29,7 @@ def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool
         payload,
         hashlib.sha256
     ).hexdigest()
-    return hmac.compare_digest(expected, expected)
+    return hmac.compare_digest(expected, signature)
 
 
 class WebhookHandler(BaseHTTPRequestHandler):
